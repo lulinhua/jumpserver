@@ -208,7 +208,6 @@ def asset_edit(request):
     asset = get_object(Asset, id=asset_id)
     if asset:
         password_old = asset.password
-    # asset_old = copy_model_instance(asset)
     af = AssetForm(instance=asset)
     if request.method == 'POST':
         af_post = AssetForm(request.POST, instance=asset)
@@ -231,7 +230,6 @@ def asset_edit(request):
                     if use_default_auth:
                         af_save.username = ''
                         af_save.password = ''
-                        # af_save.port = None
                     else:
                         if password:
                             password_encode = CRYPTOR.encrypt(password)
@@ -241,8 +239,6 @@ def asset_edit(request):
                     af_save.is_active = True if is_active else False
                     af_save.save()
                     af_post.save_m2m()
-                    # asset_new = get_object(Asset, id=asset_id)
-                    # asset_diff_one(asset_old, asset_new)
                     info = asset_diff(af_post.__dict__.get('initial'), request.POST)
                     db_asset_alert(asset, username, info)
 
@@ -323,7 +319,7 @@ def asset_list(request):
             Q(username__contains=keyword) |
             Q(group__name__contains=keyword) |
             Q(cpu__contains=keyword) |
-            Q(memory__contains=keyword) |
+            Q(memory_total__contains=keyword) |
             Q(disk__contains=keyword) |
             Q(brand__contains=keyword) |
             Q(cabinet__contains=keyword) |

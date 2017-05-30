@@ -125,10 +125,13 @@
                                     <td class="text-center"> {{ asset.ip|default_if_none:"" }} </td>
                                     <td class="text-center"> {{ asset.idc.name|default_if_none:"" }} </td>
                                     <td class="text-center">{{ asset.group.all|group_str2 }}</td>
-{#                                    <td class="text-center">{{ asset.cpu }}|{{ asset.memory }}|{{ asset.disk }}</td>#}
                                     <td class="text-center">{{ asset.system_type|default_if_none:"" }}{{ asset.system_version|default_if_none:"" }}</td>
                                     <td class="text-center"> {{ asset.cpu|get_cpu_core|default_if_none:"" }} </td>
-                                    <td class="text-center"> {{ asset.memory|default_if_none:"" }}{% if asset.memory %}G{% endif %}</td>
+                                    {% if asset.memory_available_percentage < 15 %}
+                                    <td class="text-center"> {{ asset.memory_total|default_if_none:"" }}{% if asset.memory_total %}G ({% endif %} <font color='red'>{{ asset.memory_free_percentage|default_if_none:"" }}{% if asset.memory_free_percentage %}% |{% endif %} {{ asset.memory_available_percentage|default_if_none:"" }}{% if asset.memory_available_percentage %}%</font>){% endif %}</td>
+                                    {% else %}
+                                    <td class="text-center"> {{ asset.memory_total|default_if_none:"" }}{% if asset.memory_total %}G ({% endif %} {{ asset.memory_free_percentage|default_if_none:"" }}{% if asset.memory_free_percentage %}% |{% endif %} {{ asset.memory_available_percentage|default_if_none:"" }}{% if asset.memory_available_percentage %}%){% endif %}</td>
+                                    {% endif %}
                                     <td class="text-center"> {{ asset.disk|get_disk_info }}{% if asset.disk %}G{% endif %}</td>
                                     <td class="text-center" data-editable='false'>
                                         <a href="{% url 'asset_edit' %}?id={{ asset.id }}" class="btn btn-xs btn-info">编辑</a>

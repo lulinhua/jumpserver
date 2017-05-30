@@ -96,7 +96,13 @@
                                         {{ af.cpu|bootstrap_horizontal }}
 
                                         <div class="hr-line-dashed"></div>
-                                        {{ af.memory|bootstrap_horizontal }}
+                                        {{ af.memory_total|bootstrap_horizontal }}
+
+                                        <div class="hr-line-dashed"></div>
+                                        {{ af.memory_available_percentage|bootstrap_horizontal }}
+
+                                        <div class="hr-line-dashed"></div>
+                                        {{ af.memory_free_percentage|bootstrap_horizontal }}
 
                                         <div class="hr-line-dashed"></div>
                                         {{ af.disk|bootstrap_horizontal }}

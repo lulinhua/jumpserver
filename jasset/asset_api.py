@@ -2,6 +2,7 @@
 from __future__ import division
 import xlrd
 import xlsxwriter
+import math
 from django.db.models import AutoField
 from jumpserver.api import *
 from jasset.models import ASSET_STATUS, ASSET_TYPE, ASSET_ENV, IDC, AssetRecord
@@ -204,7 +205,7 @@ def write_excel(asset_all):
     worksheet.set_column('A:E', 15)
     worksheet.set_column('F:F', 40)
     worksheet.set_column('G:Z', 15)
-    title = [u'主机名', u'IP', u'IDC', u'所属主机组', u'操作系统', u'CPU', u'内存(G)', u'硬盘(G)',
+    title = [u'主机名', u'IP', u'IDC', u'所属主机组', u'操作系统', u'CPU', u'内存(G)', u'真实空闲内存比(%)', u'含cache空闲内存比(%)', u'硬盘(G)',
              u'机柜位置', u'MAC', u'远控IP', u'机器状态', u'备注']
     for asset in asset_all:
         group_list = []
@@ -219,8 +220,8 @@ def write_excel(asset_all):
         system_version = asset.system_version if asset.system_version else u''
         system_os = unicode(system_type) + unicode(system_version)
 
-        alter_dic = [asset.hostname, asset.ip, idc_name, group_all, system_os, asset.cpu, asset.memory,
-                     disk, asset.cabinet, asset.mac, asset.remote_ip, status, asset.comment]
+        alter_dic = [asset.hostname, asset.ip, idc_name, group_all, system_os, asset.cpu, asset.memory_total, asset.memory_free_percentage,
+                     asset.memory_available_percentage ,disk, asset.cabinet, asset.mac, asset.remote_ip, status, asset.comment]
         data.append(alter_dic)
     format = workbook.add_format()
     format.set_border(1)
@@ -331,8 +332,6 @@ def get_ansible_asset_info(asset_ip, setup_info):
     all_ip = setup_info.get("ansible_all_ipv4_addresses")
     other_ip_list = all_ip.remove(asset_ip) if asset_ip in all_ip else []
     other_ip = ','.join(other_ip_list) if other_ip_list else ''
-    # hostname = setup_info.get("ansible_hostname")
-    # ip = setup_info.get("ansible_default_ipv4").get("address")
     mac = setup_info.get("ansible_default_ipv4").get("macaddress")
     brand = setup_info.get("ansible_product_name")
     try:
@@ -340,11 +339,16 @@ def get_ansible_asset_info(asset_ip, setup_info):
     except IndexError:
         cpu_type = ' '.join(setup_info.get("ansible_processor")[0].split(' ')[:6])
 
-    memory = setup_info.get("ansible_memtotal_mb")
+    memory_total = setup_info.get("ansible_memory_mb").get("real").get("total")
+    memory_used = setup_info.get("ansible_memory_mb").get("real").get("used")
+    memory_available = setup_info.get("ansible_memory_mb").get("nocache").get("free")
+    memory_available_percentage = int(round((int( memory_available * 100 / memory_total)) , 0 ))
+    memory_free = memory_total - memory_used
+    memory_free_percentage = int(round((int( memory_free * 100 / memory_total)) , 0 ))
     try:
-        memory_format = int(round((int(memory) / 1000), 0))
+        memory_total = int(round((int(memory_total) / 1000), 0))
     except Exception:
-        memory_format = memory
+        memory_total = memory_total
     disk = disk_need
     system_type = setup_info.get("ansible_distribution")
     if system_type.lower() == "freebsd":
@@ -355,9 +359,8 @@ def get_ansible_asset_info(asset_ip, setup_info):
         cpu_cores = setup_info.get("ansible_processor_vcpus")
     cpu = cpu_type + ' * ' + unicode(cpu_cores)
     system_arch = setup_info.get("ansible_architecture")
-    # asset_type = setup_info.get("ansible_system")
     sn = setup_info.get("ansible_product_serial")
-    asset_info = [other_ip, mac, cpu, memory_format, disk, sn, system_type, system_version, brand, system_arch]
+    asset_info = [other_ip, mac, cpu, memory_total, memory_available_percentage, memory_free_percentage, disk, sn, system_type, system_version, brand, system_arch]
     return asset_info
 
 
@@ -377,17 +380,20 @@ def asset_ansible_update(obj_list, name=''):
             try:
                 asset_info = get_ansible_asset_info(asset.ip, setup_info)
                 print asset_info
-                other_ip, mac, cpu, memory, disk, sn, system_type, system_version, brand, system_arch = asset_info
+                other_ip, mac, cpu, memory_total , memory_available_percentage, memory_free_percentage, disk, sn, system_type, system_version, brand, system_arch = asset_info
                 asset_dic = {"other_ip": other_ip,
                              "mac": mac,
                              "cpu": cpu,
-                             "memory": memory,
+                             "memory_total": memory_total,
+                             "memory_available_percentage": memory_available_percentage,
+                             "memory_free_percentage": memory_free_percentage,
                              "disk": disk,
                              "sn": sn,
                              "system_type": system_type,
                              "system_version": system_version,
                              "system_arch": system_arch,
-                             "brand": brand
+                             "brand": brand,
+                             "idc_id": '1',
                              }
 
                 ansible_record(asset, asset_dic, name)
