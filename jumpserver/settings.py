@@ -16,38 +16,33 @@ import getpass
 config = ConfigParser.ConfigParser()
 
 BASE_DIR = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
-config.read(os.path.join(BASE_DIR, 'jumpserver.conf'))
 KEY_DIR = os.path.join(BASE_DIR, 'keys')
 
 AUTH_USER_MODEL = 'juser.User'
 # mail config
-MAIL_ENABLE = config.get('mail', 'mail_enable')
-EMAIL_HOST = config.get('mail', 'email_host')
-EMAIL_PORT = config.get('mail', 'email_port')
-EMAIL_HOST_USER = config.get('mail', 'email_host_user')
-EMAIL_HOST_PASSWORD = config.get('mail', 'email_host_password')
-EMAIL_USE_TLS = config.getboolean('mail', 'email_use_tls')
-try:
-    EMAIL_USE_SSL = config.getboolean('mail', 'email_use_ssl')
-except ConfigParser.NoOptionError:
-    EMAIL_USE_SSL = False
+MAIL_ENABLE = '1'
+EMAIL_HOST = os.environ.get('EMAIL_HOST') or 'smtp.qq.com'
+EMAIL_PORT = int(os.environ.get('EMAIL_PORT', 465))
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER') or 'admin'
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD') or 'somepasswrd'
+EMAIL_USE_SSL = True if EMAIL_PORT == 465 else False
+EMAIL_USE_TLS = True if EMAIL_PORT == 587 else False
+EMAIL_SUBJECT_PREFIX = os.environ.get('EMAIL_SUBJECT_PREFIX') or '[Jumpserver] '
 EMAIL_BACKEND = 'django_smtp_ssl.SSLEmailBackend' if EMAIL_USE_SSL else 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_TIMEOUT = 5
 
 # ======== Log ==========
 LOG_DIR = os.path.join(BASE_DIR, 'logs')
 SSH_KEY_DIR = os.path.join(BASE_DIR, 'keys/role_keys')
-KEY = config.get('base', 'key')
-URL = config.get('base', 'url')
-LOG_LEVEL = config.get('base', 'log')
-IP = config.get('base', 'ip')
-PORT = config.get('base', 'port')
+URL = os.environ.get('SITE_URL') or 'http://localhost'
+KEY = '941enj9neshd1wes'
+IP = '0.0.0.0'
+PORT = '80'
+LOG_LEVEL = 'debug'
+
 
 # ======== Connect ==========
-try:
-    NAV_SORT_BY = config.get('connect', 'nav_sort_by')
-except (ConfigParser.NoSectionError, ConfigParser.NoOptionError):
-    NAV_SORT_BY = 'ip'
+NAV_SORT_BY = 'ip'
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/1.7/howto/deployment/checklist/
@@ -99,36 +94,21 @@ WSGI_APPLICATION = 'jumpserver.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/1.7/ref/settings/#databases
 DATABASES = {}
-if config.get('db', 'engine') == 'mysql': 
-    DB_HOST = config.get('db', 'host')
-    DB_PORT = config.getint('db', 'port')
-    DB_USER = config.get('db', 'user')
-    DB_PASSWORD = config.get('db', 'password')
-    DB_DATABASE = config.get('db', 'database')
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.mysql',
-            'NAME': DB_DATABASE,
-            'USER': DB_USER,
-            'PASSWORD': DB_PASSWORD,
-            'HOST': DB_HOST,
-            'PORT': DB_PORT,
-        }
+DB_HOST = os.environ.get('DB_HOST') or '127.0.0.1'
+DB_PORT = os.environ.get('DB_PORT') or '3306'
+DB_USER = os.environ.get('DB_USER') or 'root'
+DB_PASSWORD = os.environ.get('DB_PASSWORD') or 'root'
+DB_DATABASE = os.environ.get('DB_NAME') or 'jumpserver_db'
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': DB_DATABASE,
+        'USER': DB_USER,
+        'PASSWORD': DB_PASSWORD,
+        'HOST': DB_HOST,
+        'PORT': DB_PORT,
     }
-elif config.get('db', 'engine') == 'sqlite':
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': config.get('db', 'database'),
-        }
-    }
-else:
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
-        }
-    }
+}
 TEMPLATE_CONTEXT_PROCESSORS = (
     'django.contrib.auth.context_processors.auth',
     'django.core.context_processors.debug',
@@ -169,6 +149,30 @@ USE_TZ = False
 STATIC_URL = '/static/'
 
 BOOTSTRAP_COLUMN_COUNT = 10
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'filters': {
+        'require_debug_false': {
+            '()': 'django.utils.log.RequireDebugFalse'
+        }
+    },
+    'handlers': {
+        'mail_admins': {
+            'level': 'ERROR',
+            'filters': ['require_debug_false'],
+            'class': 'django.utils.log.AdminEmailHandler'
+        }
+    },
+    'loggers': {
+        'django.request': {
+            'handlers': ['mail_admins'],
+            'level': 'ERROR',
+            'propagate': True,
+        },
+    }
+}
 
 CRONJOBS = [
     ('0 1 * * *', 'jasset.asset_api.asset_ansible_update_all'),

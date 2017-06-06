@@ -146,14 +146,23 @@ def gen_ssh_key(username, password='',
         chown(authorized_key_file, username)
 
 
-def server_add_user(username, ssh_key_pwd=''):
+def server_add_user(username, ssh_key_pwd='', password=''):
     """
     add a system user in jumpserver
     在jumpserver服务器上添加一个用户
     """
-    bash("useradd -s '%s' '%s'" % (os.path.join(BASE_DIR, 'init.sh'), username))
+    bash("useradd -M -s '%s' '%s'" % (os.path.join(BASE_DIR, 'init.sh'), username))
+    bash("echo '%s' | passwd '%s' --stdin " % (password , username))
     gen_ssh_key(username, ssh_key_pwd)
 
+
+def server_update_user_password (username, password=''):
+    """
+    修改server上的用户密码
+    """
+    print(password)
+    print(username)
+    bash("echo '%s' |passwd '%s' --stdin" % (password , username))
 
 def user_add_mail(user, kwargs):
     """
@@ -167,11 +176,10 @@ def user_add_mail(user, kwargs):
         您的用户名： %s
         您的权限： %s
         您的web登录密码： %s
-        您的ssh密钥文件密码： %s
-        密钥下载地址： %s/juser/key/down/?uuid=%s
-        说明： 请登陆跳板机后台下载密钥, 然后使用密钥登陆跳板机！
+        跳板机地址： %s
+        说明： 登录方式 ssh %s@10.28.50.250 -p88 (登录前，请选使用通过web连接，以生成key) 
     """ % (user.name, user.username, user_role.get(user.role, u'普通用户'),
-           kwargs.get('password'), kwargs.get('ssh_key_pwd'), URL, user.uuid)
+           kwargs.get('password'), URL, user.username)
     send_mail(mail_title, mail_msg, MAIL_FROM, [user.email], fail_silently=False)
 
 
@@ -194,9 +202,7 @@ def get_display_msg(user, password='', ssh_key_pwd='', send_mail_need=False):
         跳板机地址： %s <br />
         用户名：%s <br />
         密码：%s <br />
-        密钥密码：%s <br />
-        密钥下载url: %s/juser/key/down/?uuid=%s <br />
-        该账号密码可以登陆web和跳板机。
-        """ % (URL, user.username, password, ssh_key_pwd, URL, user.uuid)
+        说明： 登录方式 ssh %s@10.28.50.250 -p88 (登录前，请选使用通过web连接，以生成key) 
+        """ % (URL, user.username, password, URL, user.username)
     return msg
 

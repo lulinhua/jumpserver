@@ -393,7 +393,6 @@ def asset_ansible_update(obj_list, name=''):
                              "system_version": system_version,
                              "system_arch": system_arch,
                              "brand": brand,
-                             "idc_id": '1',
                              }
 
                 ansible_record(asset, asset_dic, name)

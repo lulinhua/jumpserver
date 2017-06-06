@@ -263,7 +263,7 @@ def asset_list(request):
     username = request.user.username
     user_perm = request.session['role_id']
     idc_all = IDC.objects.filter()
-    asset_group_all = AssetGroup.objects.all()
+    asset_group_all = AssetGroup.objects.all().order_by('name')
     asset_types = ASSET_TYPE
     asset_status = ASSET_STATUS
     idc_name = request.GET.get('idc', '')
@@ -286,7 +286,7 @@ def asset_list(request):
             asset_find = Asset.objects.filter(idc=idc)
     else:
         if user_perm != 0:
-            asset_find = Asset.objects.all()
+            asset_find = Asset.objects.order_by("idc")
         else:
             asset_id_all = []
             user = get_object(User, username=username)

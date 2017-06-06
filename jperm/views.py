@@ -31,7 +31,7 @@ def perm_rule_list(request):
     # 渲染数据
     header_title, path1, path2 = "授权规则", "规则管理", "查看规则"
     # 获取所有规则
-    rules_list = PermRule.objects.all()
+    rules_list = PermRule.objects.order_by("name")
     rule_id = request.GET.get('id')
     # TODO: 搜索和分页
     keyword = request.GET.get('search', '')
@@ -171,8 +171,8 @@ def perm_rule_edit(request):
     # 渲染数据, 获取所选的rule对象
 
     users = User.objects.all()
-    user_groups = UserGroup.objects.all()
-    assets = Asset.objects.all()
+    user_groups = UserGroup.objects.order_by("name")
+    assets = Asset.objects.order_by("hostname")
     asset_groups = AssetGroup.objects.all()
     roles = PermRole.objects.all()
 

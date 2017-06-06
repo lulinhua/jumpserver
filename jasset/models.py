@@ -90,7 +90,7 @@ class Asset(models.Model):
     sn = models.CharField(max_length=128, blank=True, null=True, verbose_name=u"SN编号")
     date_added = models.DateTimeField(auto_now=True, null=True)
     is_active = models.BooleanField(default=True, verbose_name=u"是否激活")
-    comment = models.CharField(max_length=128, blank=True, null=True, verbose_name=u"备注")
+    comment = models.CharField(max_length=500, blank=True, null=True, verbose_name=u"备注")
 
     def __unicode__(self):
         return self.ip

@@ -184,7 +184,7 @@ def user_add(request):
                                    ssh_key_pwd=ssh_key_pwd,
                                    is_active=is_active,
                                    date_joined=datetime.datetime.now())
-                server_add_user(username=username, ssh_key_pwd=ssh_key_pwd)
+                server_add_user(username=username, ssh_key_pwd=ssh_key_pwd ,password=password)
                 user = get_object(User, username=username)
                 if groups:
                     user_groups = []
@@ -276,7 +276,6 @@ def send_mail_retry(request):
     跳板机地址： %s
     用户名：%s
     重设密码：%s/juser/password/forget/
-    请登录web点击个人信息页面重新生成ssh密钥
     """ % (URL, user.username, URL)
 
     try:
@@ -334,6 +333,7 @@ def reset_password(request):
             if user:
                 user.set_password(password)
                 user.save()
+                server_update_user_password(username=user, password=password)
                 return http_success(request, u'密码重设成功')
             else:
                 return HttpResponse('用户不存在')
@@ -354,7 +354,7 @@ def user_edit(request):
 
         user_role = {'SU': u'超级管理员', 'CU': u'普通用户'}
         user = get_object(User, id=user_id)
-        group_all = UserGroup.objects.all()
+        group_all = UserGroup.objects.order_by("name")
         if user:
             groups_str = ' '.join([str(group.id) for group in user.group.all()])
             admin_groups_str = ' '.join([str(admin_group.group.id) for admin_group in user.admingroup_set.all()])
@@ -423,17 +423,20 @@ def change_info(request):
         name = request.POST.get('name', '')
         password = request.POST.get('password', '')
         email = request.POST.get('email', '')
-
+        if len(password) < 8:
+            error = '密码太短，最少8位'
         if '' in [name, email]:
             error = '不能为空'
 
         if not error:
             user.name = name
             user.email = email
+            username = user.username
             user.save()
             if len(password) > 0:
                 user.set_password(password)
                 user.save()
+                server_update_user_password(username=username, password=password)
             msg = '修改成功'
 
     return my_render('juser/change_info.html', locals(), request)
